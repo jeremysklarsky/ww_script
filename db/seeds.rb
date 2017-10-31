@@ -150,7 +150,7 @@ end
 
 # END LIBRARY FUNCTIONS
 
-ACT_TYPES = ["TEASER", "ACT ONE", "ACT TWO", "ACT THREE", "ACT FOUR"]
+ACT_TYPES = ["TEASER", "ACT ONE", "ACT TWO", "ACT THREE", "ACT FOUR", "ACT FIVE"]
 SEASONS = (1..4).to_a
 
 SEASONS.each do |num| 
@@ -161,6 +161,7 @@ ACT_TYPES.each {|type| Act.create({name: type})}
 
 Dir.foreach( "#{Rails.root}/lib/assets/scripts/") do |f|
   next if f == '.' or f == '..'  
+
   # split script into array. Each element is scene info, a line, stage or stage direction
   script_array = File.open("#{Rails.root}/lib/assets/scripts/#{f}", 'rb') { |file| file.read }.split("\n\n")
 
@@ -207,12 +208,28 @@ Dir.foreach( "#{Rails.root}/lib/assets/scripts/") do |f|
       @scene.save
       @location.save
       @episode_act.save
-      lines.each do |line|
-        @line = Line.create
+
+      lines.each_with_index do |line, index|
+        @line = Line.new
         @line.text = line.last
         @character = find_or_create_character(line)
 
-        @line.character =  @character #line belongs to character and to scene. character has many lines through character_lines
+        if index > 0
+          previous_character = find_or_create_character(lines[index -1])
+          if @character == previous_character
+            @line = @character.lines.last
+            @line.text += " " + line.last
+          end
+        end
+
+        # previous_line = Line.all.last
+
+        # if (previous_line.character == @character && previous_line.scene == @scene)
+        #   @line = Line.all.last
+        #   @line.text += ' ' + line.last
+        # end
+
+        @line.character = @character #line belongs to character and to scene. character has many lines through character_lines
         @line.episode = @episode
         @line.location = @location
         @line.scene = @scene
